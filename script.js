@@ -144,7 +144,7 @@ function displayTimeSlots() {
                         
                         return `
                             <div class="time-slot ${isBooked ? 'booked' : 'available'}" 
-                                 onclick="${isBooked ? '' : `openBookingModal('${slot.id}')`}">
+                                 ${isBooked ? '' : `onclick="openBookingModal('${slot.id}')"`}>
                                 <div class="time">${formatTimeForDisplay(slot.time)}</div>
                                 <div class="status">${isBooked ? 'Booked' : 'Available'}</div>
                             </div>
@@ -162,6 +162,15 @@ function displayTimeSlots() {
 function openBookingModal(slotId) {
     const slot = timeSlots.find(s => s.id === slotId);
     if (!slot) return;
+    
+    // Check if slot is already booked (prevent race conditions)
+    const slotBookings = bookings.filter(b => b.slotId === slotId);
+    if (slotBookings.length > 0) {
+        alert('Sorry, this time slot has already been booked by someone else.');
+        // Refresh display to show updated status
+        displayTimeSlots();
+        return;
+    }
     
     const detailsDiv = document.getElementById('bookingDetails');
     detailsDiv.innerHTML = `
@@ -193,10 +202,10 @@ function submitBooking(event) {
     const form = document.getElementById('bookingForm');
     const slotId = form.dataset.slotId;
     
-    // Check if slot is still available
+    // Double-check if slot is still available (prevent double bookings)
     const slotBookings = bookings.filter(b => b.slotId === slotId);
     if (slotBookings.length > 0) {
-        alert('Sorry, this time slot has already been booked.');
+        alert('Sorry, this time slot has already been booked by someone else. Please select another time.');
         closeBookingModal();
         displayTimeSlots();
         return;
