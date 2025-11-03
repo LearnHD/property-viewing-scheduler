@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>12 Drake Drive - Property Viewing Scheduler</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>12 Drake Drive</h1>
+            <p class="subtitle">Townhome Viewing Scheduler</p>
+        </header>
+
+
+        <!-- Main Content -->
+        <main>
+            <!-- Instructions -->
+            <div class="info-box">
+                <p>Select an available date and time slot below to reserve your viewing appointment for 12 Drake Drive.</p>
+            </div>
+
+            <!-- Calendar/Time Slots Display -->
+            <div id="timeSlotsContainer" class="time-slots-container">
+                <p class="loading">Loading available time slots...</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close" onclick="closeBookingModal()">&times;</span>
+            <h2>Reserve Viewing Time</h2>
+            <div id="bookingDetails"></div>
+            <form id="bookingForm" onsubmit="submitBooking(event)">
+                <div class="form-group">
+                    <label for="visitorName">Your Name:</label>
+                    <input type="text" id="visitorName" required placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="visitorEmail">Email:</label>
+                    <input type="email" id="visitorEmail" required placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="visitorPhone">Phone:</label>
+                    <input type="tel" id="visitorPhone" required placeholder="Enter your phone number">
+                </div>
+                <div class="form-group">
+                    <label for="visitorNotes">Additional Notes (optional):</label>
+                    <textarea id="visitorNotes" rows="3" placeholder="Any questions or special requests?"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" onclick="closeBookingModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Confirm Booking</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="success-icon">✓</div>
+            <h2>Booking Confirmed!</h2>
+            <p>Your viewing appointment has been reserved.</p>
+            <button onclick="closeSuccessModal()" class="btn btn-primary">Close</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+

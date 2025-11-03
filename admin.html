@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - 12 Drake Drive</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>12 Drake Drive - Admin Panel</h1>
+            <p class="subtitle">Manage Viewing Time Slots</p>
+        </header>
+
+        <!-- Main Admin Content -->
+        <main>
+            <!-- Setup New Time Slots -->
+            <div class="admin-panel">
+                <h2>Create Time Slots</h2>
+                
+                <div class="admin-section">
+                    <h3>Date & Time Configuration</h3>
+                    <div class="form-group">
+                        <label for="adminDate">Date:</label>
+                        <input type="date" id="adminDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="slotLength">Slot Length:</label>
+                        <select id="slotLength" required>
+                            <option value="">Select slot length</option>
+                            <option value="10">10 minutes</option>
+                            <option value="20">20 minutes</option>
+                            <option value="30">30 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60">60 minutes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="startTime">Start Time:</label>
+                        <input type="time" id="startTime" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="endTime">End Time:</label>
+                        <input type="time" id="endTime" required>
+                    </div>
+                    
+                    <button onclick="generateTimeSlots()" class="btn btn-primary">Generate Time Slots</button>
+                </div>
+
+                <!-- Preview Generated Slots -->
+                <div id="previewSection" class="admin-section hidden">
+                    <h3>Preview Generated Slots</h3>
+                    <div id="previewSlots" class="preview-slots"></div>
+                    <button onclick="confirmGenerateSlots()" class="btn btn-primary">Confirm & Add Slots</button>
+                    <button onclick="cancelPreview()" class="btn btn-secondary">Cancel</button>
+                </div>
+                
+                <!-- Manage Existing Slots -->
+                <div class="admin-section">
+                    <h3>Manage Existing Time Slots</h3>
+                    <div id="adminSlotsList"></div>
+                </div>
+                
+                <!-- View Bookings -->
+                <div class="admin-section">
+                    <h3>View Bookings</h3>
+                    <div id="bookingsList"></div>
+                </div>
+
+                <!-- Booking Link -->
+                <div class="admin-section">
+                    <h3>Share Booking Link</h3>
+                    <div class="info-box">
+                        <p><strong>Booking Link:</strong></p>
+                        <div class="link-container">
+                            <input type="text" id="bookingLink" readonly class="link-input" value="">
+                            <button onclick="copyBookingLink()" class="btn btn-primary">Copy Link</button>
+                        </div>
+                        <p class="link-hint">Share this link on Facebook, text messages, or email</p>
+                    </div>
+                </div>
+
+                <div class="admin-actions">
+                    <a href="index.html" class="btn btn-secondary">Go to Booking Page</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
+
