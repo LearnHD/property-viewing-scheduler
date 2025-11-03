@@ -207,8 +207,16 @@ function confirmGenerateSlots() {
 
 // Delete time slot
 function deleteTimeSlot(slotId) {
-    if (!confirm('Are you sure you want to delete this time slot? All bookings for this slot will also be removed.')) {
-        return;
+    const slotBookings = bookings.filter(b => b.slotId === slotId);
+    
+    if (slotBookings.length > 0) {
+        if (!confirm(`Are you sure you want to delete this time slot? This will also remove ${slotBookings.length} booking(s) for this slot.`)) {
+            return;
+        }
+    } else {
+        if (!confirm('Are you sure you want to delete this time slot?')) {
+            return;
+        }
     }
     
     // Remove slot
@@ -312,12 +320,37 @@ function updateBookingsList() {
                     ${booking.notes ? `<div class="booking-notes">Note: ${booking.notes}</div>` : ''}
                     <div class="booking-meta">Booked: ${bookingDate.toLocaleString()}</div>
                 </div>
+                <div class="booking-actions">
+                    <button onclick="deleteBooking('${booking.id}')" class="btn btn-delete">Delete Booking</button>
+                </div>
             </div>
         `;
     });
     html += '</div>';
     
     container.innerHTML = html;
+}
+
+// Delete individual booking
+function deleteBooking(bookingId) {
+    const booking = bookings.find(b => b.id === bookingId);
+    if (!booking) return;
+    
+    const slot = timeSlots.find(s => s.id === booking.slotId);
+    if (!slot) return;
+    
+    if (!confirm(`Are you sure you want to delete the booking for ${booking.name} on ${slot.displayDate} at ${formatTimeForDisplay(slot.time)}?`)) {
+        return;
+    }
+    
+    // Remove booking
+    bookings = bookings.filter(b => b.id !== bookingId);
+    
+    saveData();
+    updateBookingsList();
+    updateAdminSlotsList();
+    
+    alert('Booking deleted successfully. The time slot is now available again.');
 }
 
 // Update booking link

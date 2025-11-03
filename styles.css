@@ -144,6 +144,19 @@ header h1 {
     border-radius: 8px;
     padding: 20px;
     border-left: 4px solid #667eea;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.booking-item .booking-details {
+    flex: 1;
+}
+
+.booking-item .booking-actions {
+    display: flex;
+    align-items: center;
 }
 
 .booking-date-time {
