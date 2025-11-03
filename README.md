@@ -17,14 +17,26 @@ A simple, clean web application for scheduling property viewings. Visitors can s
 - **`index.html`** - Public booking page (share this link!)
 - **`admin.html`** - Admin panel (manage time slots and view bookings)
 
-## Live Demo
+## 🚀 Deploy to GitHub Pages
 
-Deploy this to GitHub Pages to make it live:
-1. Push this repository to GitHub
-2. Go to Settings > Pages
-3. Select your branch and deploy
-4. Your booking link will be: `https://YOUR_USERNAME.github.io/property-viewing-scheduler/index.html`
-5. Your admin link will be: `https://YOUR_USERNAME.github.io/property-viewing-scheduler/admin.html`
+### Quick Start:
+1. **Create GitHub repository** (name it `property-viewing-scheduler`)
+2. **Push code to GitHub:**
+   ```bash
+   git remote add origin https://github.com/YOUR_USERNAME/property-viewing-scheduler.git
+   git branch -M main
+   git push -u origin main
+   ```
+3. **Enable GitHub Pages:**
+   - Go to Settings → Pages
+   - Source: `main` branch, `/ (root)` folder
+   - Save
+
+### Your Live Links:
+- **Booking Page:** `https://YOUR_USERNAME.github.io/property-viewing-scheduler/index.html`
+- **Admin Panel:** `https://YOUR_USERNAME.github.io/property-viewing-scheduler/admin.html`
+
+**See `DEPLOYMENT.md` for detailed step-by-step instructions!**
 
 ## Usage
 
