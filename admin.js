@@ -99,8 +99,14 @@ function generateTimeSlots() {
     }
     
     // Generate slots
-    const selectedDate = new Date(dateInput.value);
-    const dateStr = formatDate(selectedDate);
+    // Parse date string directly to avoid timezone issues
+    // dateInput.value is in format YYYY-MM-DD
+    const dateStr = dateInput.value; // Use directly as it's already in correct format
+    
+    // Create Date object in local timezone for display
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const selectedDate = new Date(year, month - 1, day); // month is 0-indexed
+    
     previewSlots = [];
     
     let currentTime = startTime;
