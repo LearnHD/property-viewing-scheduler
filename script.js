@@ -99,7 +99,7 @@ async function loadBookings() {
         const { data, error } = await supabase
             .from(TABLE_BOOKINGS)
             .select('*')
-            .order('bookingDate', { ascending: false });
+            .order('bookingdate', { ascending: false });
         
         if (error) {
             console.error('Error loading bookings:', error);
@@ -261,7 +261,7 @@ async function submitBooking(event) {
         email: document.getElementById('visitorEmail').value,
         phone: document.getElementById('visitorPhone').value,
         notes: document.getElementById('visitorNotes').value,
-        bookingDate: new Date().toISOString()
+        bookingdate: new Date().toISOString()
     };
     
     try {

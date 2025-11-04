@@ -101,7 +101,7 @@ async function loadBookings() {
         const { data, error } = await supabase
             .from(TABLE_BOOKINGS)
             .select('*')
-            .order('bookingDate', { ascending: false });
+            .order('bookingdate', { ascending: false });
         
         if (error) {
             console.error('Error loading bookings:', error);
@@ -454,7 +454,8 @@ function updateBookingsList() {
         const slot = timeSlots.find(s => s.id === booking.slotId);
         if (!slot) return;
         
-        const bookingDate = new Date(booking.bookingDate);
+        // Handle both camelCase and lowercase column names
+        const bookingDate = new Date(booking.bookingDate || booking.bookingdate);
         // Recalculate displayDate from date string to ensure accuracy
         const displayDate = formatDisplayDateFromString(slot.date);
         
