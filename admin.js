@@ -277,11 +277,12 @@ async function confirmGenerateSlots() {
         const supabase = window.supabase;
         
         // Prepare slots for insertion (remove preview ID)
+        // Use lowercase column names to match PostgreSQL schema
         const slotsToInsert = previewSlots.map(previewSlot => ({
             date: previewSlot.date,
             time: previewSlot.time,
-            displayDate: previewSlot.displayDate,
-            slotLength: previewSlot.slotLength
+            displaydate: previewSlot.displayDate,
+            slotlength: previewSlot.slotLength
         }));
         
         // Insert all slots at once
@@ -384,7 +385,8 @@ function updateAdminSlotsList() {
                 ${dateSlots.map(slot => {
                     const slotBookings = bookings.filter(b => b.slotId === slot.id);
                     const bookingCount = slotBookings.length;
-                    const slotLength = slot.slotLength || 30;
+                    // Handle both camelCase and lowercase column names
+                    const slotLength = slot.slotLength || slot.slotlength || 30;
                     
                     return `
                         <div class="admin-slot-item">
