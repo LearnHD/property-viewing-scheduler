@@ -166,8 +166,17 @@ function showPreview() {
 
 // Cancel preview
 function cancelPreview() {
-    document.getElementById('previewSection').classList.add('hidden');
+    const previewSection = document.getElementById('previewSection');
+    if (previewSection) {
+        previewSection.classList.add('hidden');
+    }
     previewSlots = [];
+    
+    // Clear the form inputs
+    document.getElementById('adminDate').value = '';
+    document.getElementById('slotLength').value = '';
+    document.getElementById('startTime').value = '';
+    document.getElementById('endTime').value = '';
 }
 
 // Confirm and add generated slots
