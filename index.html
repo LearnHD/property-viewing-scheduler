@@ -71,13 +71,20 @@
     </div>
 
     <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script type="module">
-        // Import Supabase library and config
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        // Import Supabase config
         import { supabaseConfig } from './supabase-config.js';
         
-        // Initialize Supabase client
-        window.supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+        // Initialize Supabase client (wait for DOM to be ready)
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                window.supabaseClient = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+                console.log('Supabase client initialized');
+            } else {
+                console.error('Supabase library not loaded');
+            }
+        });
     </script>
     <script src="script.js" type="module"></script>
 </body>

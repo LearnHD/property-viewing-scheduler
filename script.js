@@ -10,11 +10,24 @@ let bookingsSubscription = null;
 
 // Load data from Supabase on page load
 async function loadData() {
-    // Wait for Supabase to initialize
-    if (!window.supabase) {
-        setTimeout(loadData, 100);
+    // Wait for Supabase to initialize (max 10 seconds)
+    let attempts = 0;
+    const maxAttempts = 100;
+    
+    while (!window.supabaseClient && !window.supabase && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+    
+    const supabase = window.supabaseClient || window.supabase;
+    if (!supabase) {
+        console.error('Supabase client failed to initialize');
+        const container = document.getElementById('timeSlotsContainer');
+        container.innerHTML = '<p class="loading">Failed to connect to database. Please refresh the page.</p>';
         return;
     }
+    
+    console.log('Supabase client initialized:', supabase);
     
     // Set up real-time subscriptions for slots and bookings
     setupRealtimeListeners();
@@ -22,7 +35,7 @@ async function loadData() {
 
 // Set up real-time listeners for Supabase data
 function setupRealtimeListeners() {
-    const supabase = window.supabase;
+    const supabase = window.supabaseClient || window.supabase;
     
     // Listen for time slots changes
     slotsSubscription = supabase
@@ -58,7 +71,7 @@ function setupRealtimeListeners() {
 // Load time slots from Supabase
 async function loadTimeSlots() {
     try {
-        const supabase = window.supabase;
+        const supabase = window.supabaseClient || window.supabase;
         const { data, error } = await supabase
             .from(TABLE_SLOTS)
             .select('*')
@@ -82,7 +95,7 @@ async function loadTimeSlots() {
 // Load bookings from Supabase
 async function loadBookings() {
     try {
-        const supabase = window.supabase;
+        const supabase = window.supabaseClient || window.supabase;
         const { data, error } = await supabase
             .from(TABLE_BOOKINGS)
             .select('*')
@@ -253,7 +266,7 @@ async function submitBooking(event) {
     
     try {
         // Save to Supabase
-        const supabase = window.supabase;
+        const supabase = window.supabaseClient || window.supabase;
         const { data, error } = await supabase
             .from(TABLE_BOOKINGS)
             .insert([booking])

@@ -11,11 +11,23 @@ let bookingsSubscription = null;
 
 // Load data from Supabase
 async function loadData() {
-    // Wait for Supabase to initialize
-    if (!window.supabase) {
-        setTimeout(loadData, 100);
+    // Wait for Supabase to initialize (max 10 seconds)
+    let attempts = 0;
+    const maxAttempts = 100;
+    
+    while (!window.supabaseClient && !window.supabase && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+    
+    const supabase = window.supabaseClient || window.supabase;
+    if (!supabase) {
+        console.error('Supabase client failed to initialize');
+        alert('Failed to connect to database. Please refresh the page.');
         return;
     }
+    
+    console.log('Supabase client initialized:', supabase);
     
     // Set up real-time subscriptions
     setupRealtimeListeners();
@@ -27,7 +39,7 @@ async function loadData() {
 
 // Set up real-time listeners for Supabase data
 function setupRealtimeListeners() {
-    const supabase = window.supabase;
+    const supabase = window.supabaseClient || window.supabase;
     
     // Listen for time slots changes
     slotsSubscription = supabase
@@ -63,7 +75,7 @@ function setupRealtimeListeners() {
 // Load time slots from Supabase
 async function loadTimeSlots() {
     try {
-        const supabase = window.supabase;
+        const supabase = window.supabaseClient || window.supabase;
         const { data, error } = await supabase
             .from(TABLE_SLOTS)
             .select('*')
@@ -85,7 +97,7 @@ async function loadTimeSlots() {
 // Load bookings from Supabase
 async function loadBookings() {
     try {
-        const supabase = window.supabase;
+        const supabase = window.supabaseClient || window.supabase;
         const { data, error } = await supabase
             .from(TABLE_BOOKINGS)
             .select('*')
@@ -274,7 +286,14 @@ async function confirmGenerateSlots() {
     }
     
     try {
-        const supabase = window.supabase;
+        const supabase = window.supabaseClient || window.supabase;
+        
+        // Check if Supabase is initialized
+        if (!supabase) {
+            console.error('Supabase client not initialized');
+            alert('Database connection not ready. Please refresh the page and try again.');
+            return;
+        }
         
         // Prepare slots for insertion (remove preview ID)
         // Use lowercase column names to match PostgreSQL schema
@@ -285,6 +304,8 @@ async function confirmGenerateSlots() {
             slotlength: previewSlot.slotLength
         }));
         
+        console.log('Inserting slots:', slotsToInsert);
+        
         // Insert all slots at once
         const { data, error } = await supabase
             .from(TABLE_SLOTS)
@@ -292,17 +313,20 @@ async function confirmGenerateSlots() {
             .select();
         
         if (error) {
-            console.error('Error adding slots:', error);
-            alert('Error adding time slots. Please try again.');
+            console.error('Supabase error:', error);
+            console.error('Error details:', JSON.stringify(error, null, 2));
+            alert(`Error adding time slots: ${error.message || 'Unknown error'}. Check console for details.`);
             return;
         }
         
+        console.log('Successfully inserted slots:', data);
         cancelPreview();
         alert(`Successfully added ${previewSlots.length} time slot(s)!`);
         // Note: updateAdminSlotsList() will be called automatically by the real-time listener
     } catch (error) {
-        console.error('Error adding slots:', error);
-        alert('Error adding time slots. Please try again.');
+        console.error('Exception adding slots:', error);
+        console.error('Error stack:', error.stack);
+        alert(`Error adding time slots: ${error.message || 'Unknown error'}. Check console for details.`);
     }
 }
 
@@ -321,7 +345,7 @@ async function deleteTimeSlot(slotId) {
     }
     
     try {
-        const supabase = window.supabase;
+        const supabase = window.supabaseClient || window.supabase;
         
         // Delete all bookings for this slot first
         for (const booking of slotBookings) {
@@ -475,7 +499,7 @@ async function deleteBooking(bookingId) {
     }
     
     try {
-        const supabase = window.supabase;
+        const supabase = window.supabaseClient || window.supabase;
         const { error } = await supabase
             .from(TABLE_BOOKINGS)
             .delete()
