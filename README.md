@@ -10,7 +10,7 @@ A simple, clean web application for scheduling property viewings. Visitors can s
 - ✅ **Auto-Generate Slots** - Set slot length (10/20/30/45/60 min) and time range, slots auto-generate
 - ✅ **Shareable Booking Link** - Copy link to share on Facebook, text, or email
 - ✅ **Responsive Design** - Works on desktop and mobile devices
-- ✅ **Local Storage** - All data stored in browser (no backend required)
+- ✅ **Supabase Integration** - Shared database so all visitors see the same schedule
 
 ## Pages
 
@@ -68,10 +68,12 @@ A simple, clean web application for scheduling property viewings. Visitors can s
 
 ## Data Storage
 
-Currently uses browser localStorage for data persistence. This means:
-- Data is stored locally in each browser
-- Data persists across sessions
-- For production use, consider implementing a backend API
+Uses Supabase (PostgreSQL database) for shared data storage. This means:
+- All visitors see the same schedule
+- Data syncs in real-time across all devices
+- No backend server required
+
+**See `SUPABASE_SETUP.md` for setup instructions!**
 
 ## File Structure
 
@@ -100,7 +102,6 @@ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 ## Future Enhancements
 
 - Email notifications for bookings
-- Backend API for data persistence across devices
 - Calendar view option
 - Export bookings to CSV
 - Email confirmations
@@ -112,5 +113,5 @@ Free to use and modify.
 
 ---
 
-**Note:** This app uses localStorage, so data is stored locally in each browser. For multi-user scenarios, consider implementing a backend solution.
+**Note:** This app uses Supabase for shared data storage. See `SUPABASE_SETUP.md` for setup instructions.
 

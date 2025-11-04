@@ -1,42 +1,110 @@
-// Admin Panel JavaScript
-// Data Storage - Using localStorage (same as main app)
-const STORAGE_KEY_SLOTS = 'viewingTimeSlots';
-const STORAGE_KEY_BOOKINGS = 'viewingBookings';
+// Supabase table names (PostgreSQL converts to lowercase)
+const TABLE_SLOTS = 'timeslots';
+const TABLE_BOOKINGS = 'bookings';
 
 // Initialize
 let timeSlots = [];
 let bookings = [];
 let previewSlots = [];
+let slotsSubscription = null;
+let bookingsSubscription = null;
 
-// Load data from localStorage
-function loadData() {
-    const savedSlots = localStorage.getItem(STORAGE_KEY_SLOTS);
-    const savedBookings = localStorage.getItem(STORAGE_KEY_BOOKINGS);
-    
-    if (savedSlots) {
-        timeSlots = JSON.parse(savedSlots);
+// Load data from Supabase
+async function loadData() {
+    // Wait for Supabase to initialize
+    if (!window.supabase) {
+        setTimeout(loadData, 100);
+        return;
     }
     
-    if (savedBookings) {
-        bookings = JSON.parse(savedBookings);
-    }
-    
-    updateAdminSlotsList();
-    updateBookingsList();
-    updateBookingLink();
+    // Set up real-time subscriptions
+    setupRealtimeListeners();
     
     // Set minimum date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('adminDate').setAttribute('min', today);
 }
 
-// Save data to localStorage
-function saveData() {
-    localStorage.setItem(STORAGE_KEY_SLOTS, JSON.stringify(timeSlots));
-    localStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(bookings));
+// Set up real-time listeners for Supabase data
+function setupRealtimeListeners() {
+    const supabase = window.supabase;
+    
+    // Listen for time slots changes
+    slotsSubscription = supabase
+        .channel('admin-time-slots-changes')
+        .on('postgres_changes',
+            { event: '*', schema: 'public', table: TABLE_SLOTS },
+            async () => {
+                // Reload slots when changes occur
+                await loadTimeSlots();
+            }
+        )
+        .subscribe();
+    
+    // Load initial time slots
+    loadTimeSlots();
+    
+    // Listen for bookings changes
+    bookingsSubscription = supabase
+        .channel('admin-bookings-changes')
+        .on('postgres_changes',
+            { event: '*', schema: 'public', table: TABLE_BOOKINGS },
+            async () => {
+                // Reload bookings when changes occur
+                await loadBookings();
+            }
+        )
+        .subscribe();
+    
+    // Load initial bookings
+    loadBookings();
 }
 
-// Generate unique ID
+// Load time slots from Supabase
+async function loadTimeSlots() {
+    try {
+        const supabase = window.supabase;
+        const { data, error } = await supabase
+            .from(TABLE_SLOTS)
+            .select('*')
+            .order('date', { ascending: true })
+            .order('time', { ascending: true });
+        
+        if (error) {
+            console.error('Error loading time slots:', error);
+            return;
+        }
+        
+        timeSlots = data || [];
+        updateAdminSlotsList();
+    } catch (error) {
+        console.error('Error loading time slots:', error);
+    }
+}
+
+// Load bookings from Supabase
+async function loadBookings() {
+    try {
+        const supabase = window.supabase;
+        const { data, error } = await supabase
+            .from(TABLE_BOOKINGS)
+            .select('*')
+            .order('bookingDate', { ascending: false });
+        
+        if (error) {
+            console.error('Error loading bookings:', error);
+            return;
+        }
+        
+        bookings = data || [];
+        updateBookingsList();
+        updateAdminSlotsList();
+    } catch (error) {
+        console.error('Error loading bookings:', error);
+    }
+}
+
+// Generate unique ID (for client-side use, Supabase generates its own IDs)
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
@@ -191,8 +259,8 @@ function cancelPreview() {
     document.getElementById('endTime').value = '';
 }
 
-// Confirm and add generated slots
-function confirmGenerateSlots() {
+// Confirm and add generated slots (async to work with Supabase)
+async function confirmGenerateSlots() {
     if (previewSlots.length === 0) return;
     
     const dateStr = previewSlots[0].date;
@@ -205,35 +273,40 @@ function confirmGenerateSlots() {
         }
     }
     
-    // Add preview slots to timeSlots
-    previewSlots.forEach(previewSlot => {
-        const newSlot = {
-            id: generateId(),
+    try {
+        const supabase = window.supabase;
+        
+        // Prepare slots for insertion (remove preview ID)
+        const slotsToInsert = previewSlots.map(previewSlot => ({
             date: previewSlot.date,
             time: previewSlot.time,
             displayDate: previewSlot.displayDate,
             slotLength: previewSlot.slotLength
-        };
-        timeSlots.push(newSlot);
-    });
-    
-    // Sort timeSlots
-    timeSlots.sort((a, b) => {
-        if (a.date !== b.date) {
-            return a.date.localeCompare(b.date);
+        }));
+        
+        // Insert all slots at once
+        const { data, error } = await supabase
+            .from(TABLE_SLOTS)
+            .insert(slotsToInsert)
+            .select();
+        
+        if (error) {
+            console.error('Error adding slots:', error);
+            alert('Error adding time slots. Please try again.');
+            return;
         }
-        return a.time.localeCompare(b.time);
-    });
-    
-    saveData();
-    updateAdminSlotsList();
-    cancelPreview();
-    
-    alert(`Successfully added ${previewSlots.length} time slot(s)!`);
+        
+        cancelPreview();
+        alert(`Successfully added ${previewSlots.length} time slot(s)!`);
+        // Note: updateAdminSlotsList() will be called automatically by the real-time listener
+    } catch (error) {
+        console.error('Error adding slots:', error);
+        alert('Error adding time slots. Please try again.');
+    }
 }
 
-// Delete time slot
-function deleteTimeSlot(slotId) {
+// Delete time slot (async to work with Supabase)
+async function deleteTimeSlot(slotId) {
     const slotBookings = bookings.filter(b => b.slotId === slotId);
     
     if (slotBookings.length > 0) {
@@ -246,15 +319,38 @@ function deleteTimeSlot(slotId) {
         }
     }
     
-    // Remove slot
-    timeSlots = timeSlots.filter(slot => slot.id !== slotId);
-    
-    // Remove all bookings for this slot
-    bookings = bookings.filter(booking => booking.slotId !== slotId);
-    
-    saveData();
-    updateAdminSlotsList();
-    updateBookingsList();
+    try {
+        const supabase = window.supabase;
+        
+        // Delete all bookings for this slot first
+        for (const booking of slotBookings) {
+            const { error } = await supabase
+                .from(TABLE_BOOKINGS)
+                .delete()
+                .eq('id', booking.id);
+            
+            if (error) {
+                console.error('Error deleting booking:', error);
+            }
+        }
+        
+        // Delete the slot
+        const { error } = await supabase
+            .from(TABLE_SLOTS)
+            .delete()
+            .eq('id', slotId);
+        
+        if (error) {
+            console.error('Error deleting slot:', error);
+            alert('Error deleting time slot. Please try again.');
+            return;
+        }
+        
+        // Note: updateAdminSlotsList() and updateBookingsList() will be called automatically by real-time listeners
+    } catch (error) {
+        console.error('Error deleting slot:', error);
+        alert('Error deleting time slot. Please try again.');
+    }
 }
 
 // Update admin slots list
@@ -361,8 +457,8 @@ function updateBookingsList() {
     container.innerHTML = html;
 }
 
-// Delete individual booking
-function deleteBooking(bookingId) {
+// Delete individual booking (async to work with Supabase)
+async function deleteBooking(bookingId) {
     const booking = bookings.find(b => b.id === bookingId);
     if (!booking) return;
     
@@ -376,14 +472,24 @@ function deleteBooking(bookingId) {
         return;
     }
     
-    // Remove booking
-    bookings = bookings.filter(b => b.id !== bookingId);
-    
-    saveData();
-    updateBookingsList();
-    updateAdminSlotsList();
-    
-    alert('Booking deleted successfully. The time slot is now available again.');
+    try {
+        const supabase = window.supabase;
+        const { error } = await supabase
+            .from(TABLE_BOOKINGS)
+            .delete()
+            .eq('id', bookingId);
+        
+        if (error) {
+            console.error('Error deleting booking:', error);
+            alert('Error deleting booking. Please try again.');
+            return;
+        }
+        
+        // Note: updateBookingsList() and updateAdminSlotsList() will be called automatically by real-time listeners
+    } catch (error) {
+        console.error('Error deleting booking:', error);
+        alert('Error deleting booking. Please try again.');
+    }
 }
 
 // Update booking link
@@ -415,8 +521,16 @@ function copyBookingLink() {
     }
 }
 
+// Make functions available globally for onclick handlers
+window.generateTimeSlots = generateTimeSlots;
+window.confirmGenerateSlots = confirmGenerateSlots;
+window.cancelPreview = cancelPreview;
+window.deleteTimeSlot = deleteTimeSlot;
+window.deleteBooking = deleteBooking;
+window.copyBookingLink = copyBookingLink;
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     loadData();
+    updateBookingLink();
 });
-

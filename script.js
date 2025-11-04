@@ -1,87 +1,106 @@
-// Data Storage - Using localStorage for simplicity
-const STORAGE_KEY_SLOTS = 'viewingTimeSlots';
-const STORAGE_KEY_BOOKINGS = 'viewingBookings';
+// Supabase table names (PostgreSQL converts to lowercase)
+const TABLE_SLOTS = 'timeslots';
+const TABLE_BOOKINGS = 'bookings';
 
 // Initialize data structures
 let timeSlots = [];
 let bookings = [];
+let slotsSubscription = null;
+let bookingsSubscription = null;
 
-// Load data from localStorage on page load
-function loadData() {
-    const savedSlots = localStorage.getItem(STORAGE_KEY_SLOTS);
-    const savedBookings = localStorage.getItem(STORAGE_KEY_BOOKINGS);
-    
-    if (savedSlots) {
-        timeSlots = JSON.parse(savedSlots);
-    }
-    
-    if (savedBookings) {
-        bookings = JSON.parse(savedBookings);
-    }
-    
-    // Initialize with sample data if empty
-    if (timeSlots.length === 0) {
-        initializeSampleData();
-    }
-    
-    displayTimeSlots();
-    updateAdminSlotsList();
-}
-
-// Save data to localStorage
-function saveData() {
-    localStorage.setItem(STORAGE_KEY_SLOTS, JSON.stringify(timeSlots));
-    localStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(bookings));
-}
-
-// Initialize with sample time slots (for demo) - Only if no slots exist
-function initializeSampleData() {
-    // Don't initialize if slots already exist
-    if (timeSlots.length > 0) {
+// Load data from Supabase on page load
+async function loadData() {
+    // Wait for Supabase to initialize
+    if (!window.supabase) {
+        setTimeout(loadData, 100);
         return;
     }
     
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dayAfter = new Date(today);
-    dayAfter.setDate(dayAfter.getDate() + 2);
-    
-    timeSlots = [
-        {
-            id: generateId(),
-            date: formatDate(tomorrow),
-            time: '10:00',
-            displayDate: formatDisplayDate(tomorrow),
-            slotLength: 30
-        },
-        {
-            id: generateId(),
-            date: formatDate(tomorrow),
-            time: '14:00',
-            displayDate: formatDisplayDate(tomorrow),
-            slotLength: 30
-        },
-        {
-            id: generateId(),
-            date: formatDate(dayAfter),
-            time: '10:00',
-            displayDate: formatDisplayDate(dayAfter),
-            slotLength: 30
-        },
-        {
-            id: generateId(),
-            date: formatDate(dayAfter),
-            time: '14:00',
-            displayDate: formatDisplayDate(dayAfter),
-            slotLength: 30
-        }
-    ];
-    
-    saveData();
+    // Set up real-time subscriptions for slots and bookings
+    setupRealtimeListeners();
 }
 
-// Generate unique ID
+// Set up real-time listeners for Supabase data
+function setupRealtimeListeners() {
+    const supabase = window.supabase;
+    
+    // Listen for time slots changes
+    slotsSubscription = supabase
+        .channel('time-slots-changes')
+        .on('postgres_changes', 
+            { event: '*', schema: 'public', table: TABLE_SLOTS },
+            async () => {
+                // Reload slots when changes occur
+                await loadTimeSlots();
+            }
+        )
+        .subscribe();
+    
+    // Load initial time slots
+    loadTimeSlots();
+    
+    // Listen for bookings changes
+    bookingsSubscription = supabase
+        .channel('bookings-changes')
+        .on('postgres_changes',
+            { event: '*', schema: 'public', table: TABLE_BOOKINGS },
+            async () => {
+                // Reload bookings when changes occur
+                await loadBookings();
+            }
+        )
+        .subscribe();
+    
+    // Load initial bookings
+    loadBookings();
+}
+
+// Load time slots from Supabase
+async function loadTimeSlots() {
+    try {
+        const supabase = window.supabase;
+        const { data, error } = await supabase
+            .from(TABLE_SLOTS)
+            .select('*')
+            .order('date', { ascending: true })
+            .order('time', { ascending: true });
+        
+        if (error) {
+            console.error('Error loading time slots:', error);
+            const container = document.getElementById('timeSlotsContainer');
+            container.innerHTML = '<p class="loading">Error loading time slots. Please check your Supabase configuration.</p>';
+            return;
+        }
+        
+        timeSlots = data || [];
+        displayTimeSlots();
+    } catch (error) {
+        console.error('Error loading time slots:', error);
+    }
+}
+
+// Load bookings from Supabase
+async function loadBookings() {
+    try {
+        const supabase = window.supabase;
+        const { data, error } = await supabase
+            .from(TABLE_BOOKINGS)
+            .select('*')
+            .order('bookingDate', { ascending: false });
+        
+        if (error) {
+            console.error('Error loading bookings:', error);
+            return;
+        }
+        
+        bookings = data || [];
+        displayTimeSlots(); // Refresh display when bookings change
+    } catch (error) {
+        console.error('Error loading bookings:', error);
+    }
+}
+
+// Generate unique ID (for client-side use, Supabase generates its own IDs)
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
@@ -108,7 +127,6 @@ function formatDisplayDateFromString(dateStr) {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return date.toLocaleDateString('en-US', options);
 }
-
 
 // Format time for display (12-hour format)
 function formatTimeForDisplay(time24) {
@@ -207,8 +225,8 @@ function closeBookingModal() {
     document.getElementById('bookingModal').classList.add('hidden');
 }
 
-// Submit Booking
-function submitBooking(event) {
+// Submit Booking (async to work with Supabase)
+async function submitBooking(event) {
     event.preventDefault();
     
     const form = document.getElementById('bookingForm');
@@ -223,9 +241,8 @@ function submitBooking(event) {
         return;
     }
     
-    // Create booking
+    // Create booking object
     const booking = {
-        id: generateId(),
         slotId: slotId,
         name: document.getElementById('visitorName').value,
         email: document.getElementById('visitorEmail').value,
@@ -234,18 +251,31 @@ function submitBooking(event) {
         bookingDate: new Date().toISOString()
     };
     
-    bookings.push(booking);
-    saveData();
-    
-    // Close booking modal
-    closeBookingModal();
-    
-    // Show success modal
-    document.getElementById('successModal').classList.remove('hidden');
-    
-    // Refresh display
-    displayTimeSlots();
-    updateAdminSlotsList();
+    try {
+        // Save to Supabase
+        const supabase = window.supabase;
+        const { data, error } = await supabase
+            .from(TABLE_BOOKINGS)
+            .insert([booking])
+            .select();
+        
+        if (error) {
+            console.error('Error saving booking:', error);
+            alert('Sorry, there was an error saving your booking. Please try again.');
+            return;
+        }
+        
+        // Close booking modal
+        closeBookingModal();
+        
+        // Show success modal
+        document.getElementById('successModal').classList.remove('hidden');
+        
+        // Note: displayTimeSlots() will be called automatically by the real-time listener
+    } catch (error) {
+        console.error('Error saving booking:', error);
+        alert('Sorry, there was an error saving your booking. Please try again.');
+    }
 }
 
 // Close Success Modal
@@ -253,13 +283,14 @@ function closeSuccessModal() {
     document.getElementById('successModal').classList.add('hidden');
 }
 
+// Make functions available globally for onclick handlers
+window.openBookingModal = openBookingModal;
+window.closeBookingModal = closeBookingModal;
+window.closeSuccessModal = closeSuccessModal;
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     loadData();
-    
-    // Set minimum date to today for admin date input
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('adminDate').setAttribute('min', today);
     
     // Close modals when clicking outside
     window.onclick = function(event) {
@@ -274,4 +305,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
-

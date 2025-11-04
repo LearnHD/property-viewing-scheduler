@@ -70,7 +70,16 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Supabase Client -->
+    <script type="module">
+        // Import Supabase library and config
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        import { supabaseConfig } from './supabase-config.js';
+        
+        // Initialize Supabase client
+        window.supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+    </script>
+    <script src="script.js" type="module"></script>
 </body>
 </html>
 
