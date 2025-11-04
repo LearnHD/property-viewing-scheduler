@@ -94,8 +94,17 @@ function formatDate(date) {
     return `${year}-${month}-${day}`;
 }
 
-// Format date for display
+// Format date for display from Date object
 function formatDisplayDate(date) {
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+}
+
+// Format date for display from date string (YYYY-MM-DD)
+function formatDisplayDateFromString(dateStr) {
+    // Parse date string directly to avoid timezone issues
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed, create in local timezone
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return date.toLocaleDateString('en-US', options);
 }
@@ -132,7 +141,8 @@ function displayTimeSlots() {
     let html = '';
     Object.keys(slotsByDate).sort().forEach(date => {
         const dateSlots = slotsByDate[date];
-        const displayDate = dateSlots[0].displayDate;
+        // Recalculate displayDate from date string to ensure accuracy
+        const displayDate = formatDisplayDateFromString(date);
         
         html += `
             <div class="time-slot-group">
@@ -173,9 +183,11 @@ function openBookingModal(slotId) {
     }
     
     const detailsDiv = document.getElementById('bookingDetails');
+    // Recalculate displayDate from date string to ensure accuracy
+    const displayDate = formatDisplayDateFromString(slot.date);
     detailsDiv.innerHTML = `
         <div class="info-box">
-            <p><strong>Date:</strong> ${slot.displayDate}</p>
+            <p><strong>Date:</strong> ${displayDate}</p>
             <p><strong>Time:</strong> ${formatTimeForDisplay(slot.time)}</p>
         </div>
     `;

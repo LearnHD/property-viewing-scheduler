@@ -49,8 +49,17 @@ function formatDate(date) {
     return `${year}-${month}-${day}`;
 }
 
-// Format date for display
+// Format date for display from Date object
 function formatDisplayDate(date) {
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+}
+
+// Format date for display from date string (YYYY-MM-DD)
+function formatDisplayDateFromString(dateStr) {
+    // Parse date string directly to avoid timezone issues
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed, create in local timezone
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return date.toLocaleDateString('en-US', options);
 }
@@ -146,9 +155,12 @@ function showPreview() {
     const previewSection = document.getElementById('previewSection');
     const previewContainer = document.getElementById('previewSlots');
     
+    // Recalculate displayDate from date string to ensure accuracy
+    const displayDate = formatDisplayDateFromString(previewSlots[0].date);
+    
     previewContainer.innerHTML = `
         <div class="preview-info">
-            <p><strong>Date:</strong> ${previewSlots[0].displayDate}</p>
+            <p><strong>Date:</strong> ${displayDate}</p>
             <p><strong>Slot Length:</strong> ${previewSlots[0].slotLength} minutes</p>
             <p><strong>Total Slots:</strong> ${previewSlots.length}</p>
         </div>
@@ -267,7 +279,8 @@ function updateAdminSlotsList() {
     let html = '';
     Object.keys(slotsByDate).sort().forEach(date => {
         const dateSlots = slotsByDate[date];
-        const displayDate = dateSlots[0].displayDate;
+        // Recalculate displayDate from date string to ensure accuracy
+        const displayDate = formatDisplayDateFromString(date);
         
         html += `
             <div class="date-group">
@@ -320,12 +333,14 @@ function updateBookingsList() {
         if (!slot) return;
         
         const bookingDate = new Date(booking.bookingDate);
+        // Recalculate displayDate from date string to ensure accuracy
+        const displayDate = formatDisplayDateFromString(slot.date);
         
         html += `
             <div class="booking-item">
                 <div class="booking-details">
                     <div class="booking-date-time">
-                        <strong>${slot.displayDate}</strong> at <strong>${formatTimeForDisplay(slot.time)}</strong>
+                        <strong>${displayDate}</strong> at <strong>${formatTimeForDisplay(slot.time)}</strong>
                     </div>
                     <div class="booking-contact">
                         <strong>${booking.name}</strong><br>
@@ -354,7 +369,10 @@ function deleteBooking(bookingId) {
     const slot = timeSlots.find(s => s.id === booking.slotId);
     if (!slot) return;
     
-    if (!confirm(`Are you sure you want to delete the booking for ${booking.name} on ${slot.displayDate} at ${formatTimeForDisplay(slot.time)}?`)) {
+    // Recalculate displayDate from date string to ensure accuracy
+    const displayDate = formatDisplayDateFromString(slot.date);
+    
+    if (!confirm(`Are you sure you want to delete the booking for ${booking.name} on ${displayDate} at ${formatTimeForDisplay(slot.time)}?`)) {
         return;
     }
     
